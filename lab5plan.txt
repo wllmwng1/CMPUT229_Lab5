@@ -1,0 +1,120 @@
+.data
+    addedInstructions: - array of # instructions needed to add at that point
+    totalInstructions: - array of #total instructions needed to add at that point
+    newProgram: - array to put the new program into
+insertInstructions(instruction):
+    global addedInstructions
+    global totalInstructions
+    global calleeflag
+
+    addedInstructions.setToZero()
+    totalInstructions.setToZero()
+    calleeflag = 0
+    fixStack(instruction)
+    
+    for i in len(addedInstructions):
+        if i == 0:
+            j = 0
+        else:
+            j = i - 1
+        totalInstructions[i] = totalInstructions[j] + addedInstructions[i]
+    
+    newProgram = [0 for i in range(len(instructions) + totalInstructions[-1])]
+    for i in range(len(instructions)):
+        l = len(instructions)
+        newProgram[l - i + totalInstructions[l - i]] = instructions[l-i]
+    
+    calleeflag = 0
+    addInstructions(instruction)
+    fixFlow(instruction)
+
+.data
+    calleeFlag: - flag to see if it is callee
+    addDead: - array of type of dead registers needed to save at that point
+    addLive: - array of type of live registers needed to save at that point
+
+fixStack(instructions):
+    global calleeflag
+    global addedInstructions
+    global addDead
+    global addLive
+
+    deadSRegisters = 0
+    if calleeflag == 1:
+        deadSRegisters = gatherLiveRegs(instruction)[deadStack] + fp,gp,sp
+        addDead[instruction] = deadSRegisters
+        deadSRegisters = combine deadStack sRegisters
+        addedInstructions[instruction] = deadSRegisters + 5
+    for i in instructions:
+        if i == jr $ra:
+            addedInstructions[i] = addedInstructions[instruction]
+            addDead[i] = deadSRegisters
+            return
+        elif i == jal instruction:
+            calleeflag = 1
+            fixStack(start of jal function)
+            liveTRegisters = gatherLiveRegs(i)[liveRegs]
+            addLive[i] = liveTRegisters
+            addLive[i+1] = liveTRegisters
+            addedInstructions[i] = len(liveTRegisters) + 1
+            addedInstructions[i + 1] = len(liveTRegisters) + 1
+
+.data
+    baseAddiSp: - base instruction for addi $sp $sp ##
+    baseStoreSp: - base instruction for sw __ ##($sp)
+    baseLoadSp: - base instruction for lw __ ##($sp)
+
+addInstructions(instructions):
+    global totalInstructions
+    global newProgram
+
+    if calleeflag == 1:
+        newProgram[instruction] = addi $sp $sp (addedInstructions[instruction] - 1)*4
+        for newi in range(addDead[instruction]):
+            register = addDead(firstlivebit)
+            newProgram[instruction + newi] = sw register newi*4($sp)
+            addDead[instruction] >> 1
+        newProgram[instruction + addedInstructions[instruction] -3] = sw $fp __($sp)
+        newProgram[instruction + addedInstructions[instruction] -2] = addi $fp $sp $0
+        newProgram[instruction + addedInstructions[instruction] -1] = sw $gp __($sp)
+        newProgram[instruction + addedInstructions[instruction]] = sw $ra __($sp)
+        
+    for i in instructions:
+        if i == jr $ra:
+            if calleeflag == 1:
+                for newi in range(addDead[instruction+1]):
+                    register = addDead(firstlivebit)
+                    newProgram[instruction + newi] = lw register newi*4($sp)
+                    addDead[instruction+1] >> 1
+                newProgram[instruction + addedInstructions[instruction] -3] = sw $fp __($sp)
+                newProgram[instruction + addedInstructions[instruction] -2] = addi $fp $sp $0
+                newProgram[instruction + addedInstructions[instruction] -1] = sw $gp __($sp)
+                newProgram[instruction + addedInstructions[instruction]] = sw $ra __($sp)
+                newProgram[instruction+1+addedInstructions[instruction+1]] = addi $sp $sp -(addedInstructions[instruction+1] - 1)*4
+            return
+        elif i == jal instruction:
+        newProgram[i] = addi $sp $sp (addedInstructions[i] - 1)*4
+        for newi in range(addLive[i]):
+            register = addLive(firstlivebit)
+            newProgram[i + newi] = sw register newi*4($sp)
+            addLive[i] >> 1
+        for newi in range(addLive[i+1]):
+            register = addLive(firstlivebit)
+            newProgram[i + newi] = lw register newi*4($sp)
+            addLive[i+1] >> 1
+        newProgram[i+1+addedInstructions[i+1]] = addi $sp $sp -(addedInstructions[i+1] - 1)*4
+
+.data
+    N/A
+
+fixFlow(instructions):
+    global totalInstructions
+
+    for i in instructions:
+        if i == j instruction:
+            address = address + totalInstructions[address]
+        if i == jal instruction:
+            address = address + totalInstructions[address]
+        if i == branch instruction:
+            address = address + totalInstructions[address]
+    return
